@@ -1,34 +1,30 @@
-import datetime
-import os
- 
-from flask import Flask, Response, request
-from flask_mongoengine import MongoEngine
+from flask import Flask
+from pymongo import MongoClient
+from flask_cors import CORS
+import json
 
 app = Flask(__name__)
-app.config['MONGODB_SETTINGS'] = {
-    'host': os.environ['MONGODB_HOST'],
-    'username': os.environ['MONGODB_USERNAME'],
-    'password': os.environ['MONGODB_PASSWORD'],
-    'db': 'webapp'
-}
+CORS(app)
 
-db = MongoEngine()
-db.init_app(app)
+username = 'admin'
+password = 'password'
+mongoClient = MongoClient('mongodb://%s:%s@127.0.0.1' % (username, password))
 
-class Todo(db.Document):
-    title = db.StringField(max_length=60)
-    text = db.StringField()
-    done = db.BooleanField(default=False)
-    pub_date = db.DateTimeField(default=datetime.datetime.now)
+db = mongoClient.get_database('test')
+col = db.get_collection('fremp_test_app1_col')
 
-@app.route("/api")
-def index():
-    Todo.objects().delete()
-    Todo(title="Simple todo A", text="12345678910").save()
-    Todo(title="Simple todo B", text="12345678910").save()
-    Todo.objects(title__contains="B").update(set__text="Hello world")
-    todos = Todo.objects().to_json()
-    return Response(todos, mimetype="application/json", status=200)
+# $ mongo
+# $ use fremp_test_app1_db
+# $ db.fremp_test_app1_col.insertOne({'data': 'Hello World from MongoDB'})
+
+@app.route('/api/get/')
+def getdata():
+    data = ''
+    if col.find({}):
+        for data in col.find({}):
+            import pdb; pdb.set_trace()
+            data = data['data']
+    return {'data': data}
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(host="localhost", port=5001, debug=True)
